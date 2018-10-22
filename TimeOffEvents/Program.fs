@@ -1,7 +1,10 @@
-module TimeOff.TestsRunner
+namespace TimeOff
 
 open Expecto
+open TimeOff.Tests
 
-[<EntryPoint>]
-let main args =
-  runTestsWithArgs { defaultConfig with ``parallel`` = false } args Tests.tests
+module TestsRunner =
+
+    [<EntryPoint>]
+    let main args =
+        runTestsInAssembly { defaultConfig with ``parallel`` = false } args

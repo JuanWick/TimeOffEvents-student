@@ -4,9 +4,16 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="EventStorage.fs" />
-    <Compile Include="Model.fs" />
-    <Compile Include="Tests.fs" />
+    <Compile Include="Types\User.fs" />
+    <Compile Include="Types\TimeOffRequest.fs" />
+    <Compile Include="Types\Command.fs" />
+    <Compile Include="Types\RequestEvent.fs" />
+    <Compile Include="Types\RequestState.fs" />
+	<Compile Include="Types\UserRequestsState.fs" />
+    <Compile Include="Storage\EventStorage.fs" />
+    <Compile Include="Handlers\EventHandler.fs" />
+    <Compile Include="Handlers\CommandHandler.fs" />
+    <Compile Include="Tests\Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
