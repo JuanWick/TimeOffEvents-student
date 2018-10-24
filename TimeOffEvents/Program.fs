@@ -1,7 +1,6 @@
 namespace TimeOff
 
 open Expecto
-open TimeOff.Tests
 
 module TestsRunner =
 

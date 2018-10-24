@@ -9,6 +9,8 @@ open TimeOff.TimeOffRequest
 open System
 open TimeOff.RequestState
 open TimeOff.UserRequestsState
+open TimeOff.Boundary
+open TimeOff.HalfDay
 
 
 module CommandHandler =

@@ -16,12 +16,41 @@ module EventHandler =
         let requestState = defaultArg (Map.tryFind event.Request.RequestId userRequests) NotCreated
         let newRequestState = evolveRequest requestState event
         userRequests.Add (event.Request.RequestId, newRequestState)
+   
+    let overlapsWith request1 request2 = //AM = matin | PM = après-midi
 
-    let overlapsWith request1 request2 =
-        false //TODO: write a function that checks if 2 requests overlap
+        if request1.Start.Date >= request2.Start.Date && request1.End.Date <= request2.End.Date then
+            true
+        elif request1.Start.Date <= request2.Start.Date && request1.End.Date >= request2.Start.Date then
+            if request1.End.Date = request2.Start.Date then
+                if request1.End.HalfDay = HalfDay.AM && request2.Start.HalfDay = HalfDay.PM then
+                    false
+                else
+                    true
+            else
+                true
+        elif request1.Start.Date <= request2.End.Date then
+            if request1.Start.Date = request2.End.Date then
+                if request1.Start.HalfDay = HalfDay.AM && request2.End.HalfDay = HalfDay.PM then
+                    true
+                elif request1.Start.HalfDay = request2.End.HalfDay then
+                    true
+                else
+                    false
+            else
+                false
+        else
+            false
 
     let overlapsWithAnyRequest (otherRequests: TimeOffRequest seq) request =
-        false //TODO: write this function using overlapsWith
+        let results: bool list =
+            otherRequests
+            |> Seq.toList
+            |> List.map (fun x -> overlapsWith request x)
+            |> List.filter (fun x -> x)
+
+        results.Length > 0
+      
 
     let createRequest activeUserRequests  request =
         if request |> overlapsWithAnyRequest activeUserRequests then
