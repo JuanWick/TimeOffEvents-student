@@ -4,6 +4,8 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Types\IDateProvider.fs" />
+    <Compile Include="Types\DateProvider.fs" />
     <Compile Include="Types\User.fs" />
     <Compile Include="Types\HalfDay.fs" />
     <Compile Include="Types\Boundary.fs" />
