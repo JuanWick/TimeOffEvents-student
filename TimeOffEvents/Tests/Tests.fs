@@ -307,6 +307,21 @@ let creationTests =
       |> Then (Error "The request starts in the past") "The request should not have been created"
     }
 
+    test "A request for today is not created" {
+      let dateProviderService = new DateProvider.DateTestProviderService()
+      let dateProvider = dateProviderService :>ICustomDate
+
+      let request = {
+        UserId = 1
+        RequestId = Guid.Empty
+        Start = { Date = dateProvider.CustomDate(2018, 11 ,4); HalfDay = AM }
+        End = { Date = dateProvider.CustomDate(2018, 11, 6); HalfDay = PM } }
+
+      Given [ ]
+      |> When (RequestTimeOff request)
+      |> Then (Error "The request starts in the past") "The request should not have been created"
+    }
+
     test "A request in conflit is not created" {
       let dateProviderService = new DateProvider.DateTestProviderService()
       let dateProvider = dateProviderService :>ICustomDate      
