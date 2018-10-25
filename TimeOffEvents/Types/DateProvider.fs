@@ -1,10 +1,15 @@
 ﻿namespace TimeOff
-open TimeOff.IDateProvider
+open TimeOff.ICustomDate
 
 module DateProvider =
 
     type DateProviderService() =
     
-        interface IDateProvider with
+        interface ICustomDate with
+            member this.CustomDate(arg1: int, arg2: int, arg3: int): System.DateTime = 
+                System.DateTime(arg1,arg2,arg3)            
             member this.Now(): System.DateTime = 
-               System.DateTime.UtcNow
+                System.DateTime.UtcNow
+        
+        
+        

@@ -4,7 +4,7 @@ open TimeOff.RequestState
 open TimeOff.RequestEvent
 open TimeOff.UserRequestsState
 open TimeOff.TimeOffRequest
-open TimeOff.IDateProvider
+open TimeOff.ICustomDate
 
 module EventHandler =
     let evolveRequest state event =

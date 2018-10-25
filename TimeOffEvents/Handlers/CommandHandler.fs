@@ -9,7 +9,7 @@ open TimeOff.TimeOffRequest
 open System
 open TimeOff.RequestState
 open TimeOff.UserRequestsState
-open TimeOff.IDateProvider
+open TimeOff.ICustomDate
 
 
 module CommandHandler =
@@ -50,7 +50,7 @@ module CommandHandler =
 
     let createRequest activeUserRequests  request =
         let dateProviderService = new DateProvider.DateProviderService()
-        let dateProvider = dateProviderService :>IDateProvider
+        let dateProvider = dateProviderService :>ICustomDate
 
         if overlapsWithAnyRequest activeUserRequests  request then
             Error "Overlapping request"

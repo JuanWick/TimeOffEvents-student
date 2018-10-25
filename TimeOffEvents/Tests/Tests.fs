@@ -10,6 +10,8 @@ open TimeOff.CommandHandler
 open TimeOff.EventHandler
 open TimeOff.Boundary
 open TimeOff.HalfDay
+open System
+open TimeOff.ICustomDate
 
 let Given events = events
 let When command events = events, command
@@ -23,8 +25,6 @@ let Then expected message (events: RequestEvent list, command: Command) =
     let userRequestsState = defaultArg (Map.tryFind command.UserId globalState) Map.empty
     let result = decide userRequestsState command
     Expect.equal result expected message
-
-open System
 
 [<Tests>]
 let overlapTests = 
@@ -274,11 +274,14 @@ let overlapTests =
 let creationTests =
   testList "Creation tests" [
     test "A request is created" {
+      let dateProviderService = new DateProvider.DateProviderService()
+      let dateProvider = dateProviderService :>ICustomDate
+
       let request = {
         UserId = 1
         RequestId = Guid.Empty
-        Start = { Date = DateTime(2018, 12, 28); HalfDay = AM }
-        End = { Date = DateTime(2018, 12, 28); HalfDay = PM } }
+        Start = { Date = dateProvider.CustomDate(2018, 12 ,8); HalfDay = AM }
+        End = { Date = dateProvider.CustomDate(2018, 12, 28); HalfDay = PM } }
 
       Given [ ]
       |> When (RequestTimeOff request)
@@ -290,11 +293,14 @@ let creationTests =
 let validationTests =
   testList "Validation tests" [
     test "A request is validated" {
+      let dateProviderService = new DateProvider.DateProviderService()
+      let dateProvider = dateProviderService :>ICustomDate
+
       let request = {
         UserId = 1
         RequestId = Guid.Empty
-        Start = { Date = DateTime(2018, 12, 28); HalfDay = AM }
-        End = { Date = DateTime(2018, 12, 28); HalfDay = PM } }
+        Start = { Date = dateProvider.CustomDate(2018, 12, 28); HalfDay = AM }
+        End = { Date = dateProvider.CustomDate(2018, 12, 28); HalfDay = PM } }
 
       Given [ RequestCreated request ]
       |> When (ValidateRequest (1, Guid.Empty))
