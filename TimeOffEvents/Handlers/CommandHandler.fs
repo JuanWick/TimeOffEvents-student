@@ -48,8 +48,8 @@ module CommandHandler =
 
         results.Length > 0
 
-    let createRequest activeUserRequests  request =
-        let dateProviderService = new DateProvider.DateProviderService()
+    let createRequest activeUserRequests  request dateProviderService =
+        let dateProviderService = dateProviderService
         let dateProvider = dateProviderService :>ICustomDate
 
         if overlapsWithAnyRequest activeUserRequests  request then
@@ -67,7 +67,7 @@ module CommandHandler =
         Error "Request cannot be validated"
 
 
-    let decide (userRequests: UserRequestsState) (command: Command) =
+    let decide (userRequests: UserRequestsState) (command: Command) dateProviderService=
         match command with
         | RequestTimeOff request ->
             let activeUserRequests  =
@@ -77,7 +77,7 @@ module CommandHandler =
                 |> Seq.where (fun state -> state.IsActive)
                 |> Seq.map (fun state -> state.Request)
 
-            createRequest activeUserRequests  request
+            createRequest activeUserRequests  request dateProviderService
 
         | ValidateRequest (_, requestId) ->
             let requestState = defaultArg (userRequests.TryFind requestId) NotCreated

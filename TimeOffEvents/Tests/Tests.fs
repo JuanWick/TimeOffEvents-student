@@ -23,7 +23,11 @@ let Then expected message (events: RequestEvent list, command: Command) =
 
     let globalState = Seq.fold evolveGlobalState Map.empty events
     let userRequestsState = defaultArg (Map.tryFind command.UserId globalState) Map.empty
-    let result = decide userRequestsState command
+
+    let dateProviderService = new DateProvider.DateTestProviderService()
+    let dateProvider = dateProviderService :>ICustomDate
+
+    let result = decide userRequestsState command dateProviderService
     Expect.equal result expected message
 
 [<Tests>]
@@ -274,7 +278,7 @@ let overlapTests =
 let creationTests =
   testList "Creation tests" [
     test "A request is created" {
-      let dateProviderService = new DateProvider.DateProviderService()
+      let dateProviderService = new DateProvider.DateTestProviderService()
       let dateProvider = dateProviderService :>ICustomDate
 
       let request = {
@@ -284,8 +288,46 @@ let creationTests =
         End = { Date = dateProvider.CustomDate(2018, 12, 28); HalfDay = PM } }
 
       Given [ ]
-      |> When (RequestTimeOff request)
+      |> When (RequestTimeOff request )
       |> Then (Ok [RequestCreated request]) "The request should have been created"
+    }
+
+    test "A request in the past is not created" {
+      let dateProviderService = new DateProvider.DateTestProviderService()
+      let dateProvider = dateProviderService :>ICustomDate
+
+      let request = {
+        UserId = 1
+        RequestId = Guid.Empty
+        Start = { Date = dateProvider.CustomDate(2018, 11 ,1); HalfDay = AM }
+        End = { Date = dateProvider.CustomDate(2018, 11, 3); HalfDay = PM } }
+
+      Given [ ]
+      |> When (RequestTimeOff request)
+      |> Then (Error "The request starts in the past") "The request should not have been created"
+    }
+
+    test "A request in conflit is not created" {
+      let dateProviderService = new DateProvider.DateTestProviderService()
+      let dateProvider = dateProviderService :>ICustomDate      
+     
+      let oldRequest = RequestValidated {
+        UserId = 1
+        RequestId = Guid.Empty
+        Start = { Date = dateProvider.CustomDate(2018, 11 ,1); HalfDay = AM }
+        End = { Date = dateProvider.CustomDate(2018, 11, 3); HalfDay = PM } }
+
+
+      let newRequest = {
+        UserId = 1
+        RequestId = Guid.NewGuid()
+        Start = { Date = dateProvider.CustomDate(2018, 11 ,1); HalfDay = AM }
+        End = { Date = dateProvider.CustomDate(2018, 11 ,1); HalfDay = PM }
+        }
+
+      Given [oldRequest]
+      |> When (RequestTimeOff newRequest)
+      |> Then (Error "Overlapping request") "The request should not have been created"
     }
   ]
 
