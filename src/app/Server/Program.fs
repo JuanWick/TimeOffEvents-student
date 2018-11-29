@@ -2,7 +2,6 @@ module ServerCode.App
 
 open TimeOff
 open EventStorage
-
 open System
 open System.IO
 open Microsoft.AspNetCore.Builder
@@ -11,113 +10,15 @@ open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
-open Giraffe.HttpStatusCodeHandlers.RequestErrors
-open FSharp.Control.Tasks
 open TimeOff.DomainTypes
-open TimeOff.CommandHandler
-open TimeOff.EventHandler
-open TimeOff.DtoTypes
-
-// ---------------------------------
-// Handlers
-// ---------------------------------
-
-module HttpHandlers =
-
-    open Microsoft.AspNetCore.Http
-
-    [<CLIMutable>]
-    type UserAndRequestId = {
-        UserId: UserId
-        RequestId: Guid
-    }
-
-    let timeOffRequestAskDtoAdapter (timeOffRequestAskDto: TimeOffRequestAskDto) =
-        let timeOffRequest = {
-                UserId = timeOffRequestAskDto.UserId
-                RequestId = Guid.Empty;
-                Start =  timeOffRequestAskDto.Start
-                End =  timeOffRequestAskDto.End
-            }
-        timeOffRequest
-
-    let requestTimeOff (handleCommand: Command -> Result<RequestEvent list, string>) =
-        fun (next: HttpFunc) (ctx: HttpContext) ->
-            task {
-                let! timeOffRequestAskDto = ctx.BindJsonAsync<TimeOffRequestAskDto>()
-
-                let timeOffRequest = timeOffRequestAskDtoAdapter(timeOffRequestAskDto)
-
-                let command = RequestTimeOff timeOffRequest
-                let result = handleCommand command
-                match result with
-                | Ok _ -> return! json timeOffRequest next ctx
-                | Error message ->
-                    return! (BAD_REQUEST message) next ctx
-            }
-
-  
-
-    let infoByUser (handleCommand: Command -> Result<RequestEvent list, string>) =
-        fun (next: HttpFunc) (ctx: HttpContext) ->
-            task {
-                let debutB = {
-                    Date =  DateTime.Now
-                    HalfDay = AM
-                }
-
-                let finB = {
-                    Date =  DateTime.Now
-                    HalfDay = AM
-                }
-
-                let timeOffRequest = {
-                    UserId = 1
-                    RequestId = Guid.Empty
-                    Start =  debutB
-                    End =  finB
-                }
-         
-                return! json timeOffRequest next ctx
-            }
-
-    let validateRequest (handleCommand: Command -> Result<RequestEvent list, string>) =
-        fun (next: HttpFunc) (ctx: HttpContext) ->
-            task {
-                let userAndRequestId = ctx.BindQueryString<UserAndRequestId>()
-                let command = ValidateRequest (userAndRequestId.UserId, userAndRequestId.RequestId)
-                let result = handleCommand command
-                match result with
-                | Ok [RequestValidated timeOffRequest] -> return! json timeOffRequest next ctx
-                | Ok _ -> return! Successful.NO_CONTENT next ctx
-                | Error message ->
-                    return! (BAD_REQUEST message) next ctx
-            }
+open TimeOff.Handlers
 
 // ---------------------------------
 // Web app
 // ---------------------------------
 
 let webApp (eventStore: IStore<UserId, RequestEvent>) =
-    let handleCommand (user: User) (command: Command) =
-        let userId = command.UserId
 
-        let eventStream = eventStore.GetStream(userId)
-        let state = eventStream.ReadAll() |> Seq.fold evolveUserRequests Map.empty
-
-        let dateProviderService = new DateProvider.DateProviderService()
-
-        // Decide how to handle the command
-        let result = decide state user command dateProviderService
-
-        // Save events in case of success
-        match result with
-        | Ok events -> eventStream.Append(events)
-        | _ -> ()
-
-        // Finally, return the result
-        result
-        
     choose [
         subRoute "/api"
             (choose [
@@ -125,10 +26,9 @@ let webApp (eventStore: IStore<UserId, RequestEvent>) =
                 subRoute "/timeoff"
                     (Auth.Handlers.requiresJwtTokenForAPI (fun user ->
                         choose [
-                            POST >=> route "/request" >=> HttpHandlers.requestTimeOff (handleCommand user)
-                            GET >=> route "/user/infos" >=> HttpHandlers.infoByUser (handleCommand user)
-
-                            POST >=> route "/validate-request" >=> HttpHandlers.validateRequest (handleCommand user)
+                            POST >=> route "/request" >=> requestTimeOffHandler (eventStore) (user)
+                            GET >=> routef "/request/%i/%O" (requestTimeOffByIdHandler (eventStore) (user))
+                            POST >=> route "/validate-request" >=> validateRequestHandler (eventStore) (user)
                         ]
                     ))
             ])
@@ -136,6 +36,7 @@ let webApp (eventStore: IStore<UserId, RequestEvent>) =
 
 // ---------------------------------
 // Error handler
+
 // ---------------------------------
 
 let errorHandler (ex: Exception) (logger: ILogger) =

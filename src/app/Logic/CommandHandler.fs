@@ -73,6 +73,15 @@ module CommandHandler =
         | _ ->
             Error "Request cannot be validated"
 
+    let getRequestById requestState =
+        
+        match requestState with
+        | PendingValidation request ->
+            Ok [RequestCreated request]
+        | Validated request ->
+            Ok [RequestValidated request]
+        | _ ->
+            Error "Request cannot be found"
 
     let decide (userRequests: UserRequestsState) (user:User) (command: Command) dateProviderService =
         let relatedUserId = command.UserId
@@ -99,4 +108,7 @@ module CommandHandler =
                     validateRequest requestState
             | CancelRequest (_, requestId) ->
                 let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
-                cancelRequest requestState.Request dateProviderService 
+                cancelRequest requestState.Request dateProviderService
+            | GetRequestById (_, requestId) ->
+                let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
+                getRequestById requestState 

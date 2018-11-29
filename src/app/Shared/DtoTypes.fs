@@ -1,6 +1,7 @@
 ﻿namespace TimeOff
 
 open TimeOff.DomainTypes
+open System
 
 module DtoTypes =
 
@@ -9,4 +10,10 @@ module DtoTypes =
         UserId: UserId
         Start: Boundary
         End: Boundary
+    }
+
+    [<CLIMutable>]
+    type UserAndRequestId = {
+        UserId: UserId
+        RequestId: Guid
     }
