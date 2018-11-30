@@ -60,10 +60,12 @@ module DomainTypes =
         | RequestTimeOff of TimeOffRequest
         | ValidateRequest of UserId * Guid
         | GetRequestById of UserId * Guid
+        | GetAllRequest of UserId
         | CancelRequest of UserId * Guid with
         member this.UserId =
             match this with
             | RequestTimeOff request -> request.UserId
             | ValidateRequest (userId, _) -> userId
             | GetRequestById (userId, _) -> userId
+            | GetAllRequest (userId) -> userId 
             | CancelRequest (userId, _) -> userId

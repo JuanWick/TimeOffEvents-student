@@ -82,6 +82,29 @@ module CommandHandler =
             Ok [RequestValidated request]
         | _ ->
             Error "Request cannot be found"
+    let convertStates(requestState:RequestState)  =
+        match requestState with 
+        | PendingValidation request ->
+             Some (RequestCreated request)
+        | Validated request ->
+             Some (RequestValidated request)
+        | Canceled request ->
+             Some (RequestCanceled request)
+        | NotCreated -> None
+
+    let getAllRequest (userRequests: UserRequestsState)  =
+        let result = 
+            userRequests
+            |> Map.toSeq
+            |> Seq.map(fun(_, requestState) -> requestState)
+            |> Seq.map(convertStates)
+            |> Seq.where(fun r -> match r with
+                                    | None -> false
+                                    | _ -> true)
+            |> Seq.map(fun r -> r.Value)
+            |> Seq.toList
+
+        Ok result
 
     let decide (userRequests: UserRequestsState) (user:User) (command: Command) dateProviderService =
         let relatedUserId = command.UserId
@@ -112,3 +135,6 @@ module CommandHandler =
             | GetRequestById (_, requestId) ->
                 let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
                 getRequestById requestState 
+            | GetAllRequest (userId) ->
+                getAllRequest userRequests 
+                

@@ -36,9 +36,19 @@ module Handlers =
     let requestTimeOffByIdHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) = 
         fun (next : HttpFunc) (ctx : HttpContext) -> 
             task { 
-                let userAndRequestId = ctx.BindQueryString<UserAndRequestId>()
                
                 let command = GetRequestById (idUser, idRequest)
+                let result = handleCommand(eventStore) (user) (command)
+                match result with
+                | Ok _ -> return! json result next ctx
+                | Error message ->
+                    return! (BAD_REQUEST message) next ctx 
+            }
+
+    let requestTimeOffListHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int) = 
+        fun (next : HttpFunc) (ctx : HttpContext) -> 
+            task {               
+                let command = GetAllRequest (idUser)
                 let result = handleCommand(eventStore) (user) (command)
                 match result with
                 | Ok _ -> return! json result next ctx
