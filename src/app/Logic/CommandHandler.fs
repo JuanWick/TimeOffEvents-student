@@ -60,6 +60,18 @@ module CommandHandler =
         else
             Ok [RequestCanceled request]
 
+    let refuseRequest (requestState:RequestState) dateProviderService =
+        let dateProviderService = dateProviderService
+        let dateProvider = dateProviderService :>ICustomDate
+        match requestState with
+        | PendingValidation request-> 
+            if request.Start.Date <= dateProvider.Now() then
+                Error "The request starts in the past"
+            else
+                Ok [RequestRefused request]
+        | _ -> Error "Invalid state for action"
+
+
     let validateRequest requestState =
         match requestState with
         | PendingValidation request ->
@@ -76,6 +88,7 @@ module CommandHandler =
             Ok [RequestValidated request]
         | _ ->
             Error "Request cannot be found"
+
     let convertStates(requestState:RequestState)  =
         match requestState with 
         | PendingValidation request ->
@@ -85,6 +98,8 @@ module CommandHandler =
         | Canceled request ->
              Some (RequestCanceled request)
         | NotCreated -> None
+        | Refused request -> 
+            Some (RequestRefused request)
 
     let getAllRequest (userRequests: UserRequestsState)  =
         let result = 
@@ -126,6 +141,12 @@ module CommandHandler =
                 else
                     let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
                     validateRequest requestState
+            | RefuseRequest (_, requestId) ->
+                if user <> Manager then
+                    Error "Unauthorized"
+                else
+                    let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
+                    refuseRequest requestState dateProviderService
             | CancelRequest (_, requestId) ->
                 if user = Manager then
                     Error "Unauthorized"

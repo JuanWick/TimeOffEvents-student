@@ -396,7 +396,7 @@ let cancelTests =
     test "A waiting request is cancel by employee" {
         let request1 = {
             UserId = 1
-            RequestId = Guid.Empty
+            RequestId = Guid.NewGuid()
             Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
             End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
         }
@@ -504,5 +504,66 @@ let cancelTests =
     |> ConnectedAs (Manager)
     |> When (CancelRequest (1, guid1))
     |> Then (Error "Unauthorized") "The request should not have been canceled"
+    }
+  ]
+
+[<Tests>]
+let refuseTests =
+  testList "Refuse tests" [
+    test "A waiting request is refused by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId =Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCreated  request1]
+        |> ConnectedAs (Manager)
+        |> When (RefuseRequest (1, guid1))
+        |> Then (Ok [RequestRefused request1]) "The request should have been refused"
+    }
+    test "A waiting request can't be refused by an employee" {
+        let request1 = {
+            UserId = 1
+            RequestId =Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCreated  request1]
+        |> ConnectedAs (Employee 1)
+        |> When (RefuseRequest (1, guid1))
+        |> Then (Error "Unauthorized") "The request should not have been refused"
+    }
+    test "A request in the past can't be refused by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId =Guid.NewGuid()
+            Start = { Date = DateTime(2000, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2000, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCreated  request1]
+        |> ConnectedAs (Manager)
+        |> When (RefuseRequest (1, guid1))
+        |> Then (Error "The request starts in the past") "The request should not have been refused"
+    }
+    test "A validated request can't be refused by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId =Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestValidated  request1]
+        |> ConnectedAs (Manager)
+        |> When (RefuseRequest (1, guid1))
+        |> Then (Error "Invalid state for action") "The request should have been refused"
     }
   ]
