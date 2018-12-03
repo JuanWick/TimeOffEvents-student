@@ -28,6 +28,7 @@ let webApp (eventStore: IStore<UserId, RequestEvent>) =
                         choose [
                             POST >=> route "/request" >=> requestTimeOffHandler (eventStore) (user)
                             GET >=> routef "/request/%i/%O" (requestTimeOffByIdHandler (eventStore) (user))
+                            POST >=> routef "/cancel-request/%i/%O" (cancelRequestTimeOffByIdHandler (eventStore) (user))
                             GET >=> routef "/request/%i" (requestTimeOffListHandler (eventStore) (user))
                             POST >=> route "/validate-request" >=> validateRequestHandler (eventStore) (user)
                         ]

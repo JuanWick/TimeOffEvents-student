@@ -48,14 +48,8 @@ module CommandHandler =
             Error "Overlapping request"
         elif request.Start.Date <= dateProvider.Now() then
             Error "The request starts in the past"
-        else
-            let timeOffRequestToSave = {
-                UserId = request.UserId
-                RequestId = Guid.NewGuid();
-                Start =  request.Start
-                End =  request.End
-            }
-            Ok [RequestCreated timeOffRequestToSave]
+        else 
+            Ok [RequestCreated request]
 
     let cancelRequest request dateProviderService =
         let dateProviderService = dateProviderService
@@ -114,14 +108,17 @@ module CommandHandler =
         | _ ->
             match command with
             | RequestTimeOff request ->
-                let activeUserRequests =
-                    userRequests
-                    |> Map.toSeq
-                    |> Seq.map (fun (_, state) -> state)
-                    |> Seq.where (fun state -> state.IsActive)
-                    |> Seq.map (fun state -> state.Request)
+                if user = Manager then
+                    Error "Unauthorized"
+                else
+                    let activeUserRequests =
+                        userRequests
+                        |> Map.toSeq
+                        |> Seq.map (fun (_, state) -> state)
+                        |> Seq.where (fun state -> state.IsActive)
+                        |> Seq.map (fun state -> state.Request)
 
-                createRequest activeUserRequests request dateProviderService
+                    createRequest activeUserRequests request dateProviderService
 
             | ValidateRequest (_, requestId) ->
                 if user <> Manager then
@@ -130,8 +127,11 @@ module CommandHandler =
                     let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
                     validateRequest requestState
             | CancelRequest (_, requestId) ->
-                let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
-                cancelRequest requestState.Request dateProviderService
+                if user = Manager then
+                    Error "Unauthorized"
+                else
+                    let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
+                    cancelRequest requestState.Request dateProviderService
             | GetRequestById (_, requestId) ->
                 let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
                 getRequestById requestState 

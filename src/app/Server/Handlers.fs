@@ -44,6 +44,17 @@ module Handlers =
                 | Error message ->
                     return! (BAD_REQUEST message) next ctx 
             }
+    let cancelRequestTimeOffByIdHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) = 
+        fun (next : HttpFunc) (ctx : HttpContext) -> 
+            task { 
+               
+                let command = CancelRequest (idUser, idRequest)
+                let result = handleCommand(eventStore) (user) (command)
+                match result with
+                | Ok _ -> return! json result next ctx
+                | Error message ->
+                    return! (BAD_REQUEST message) next ctx 
+            }
 
     let requestTimeOffListHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int) = 
         fun (next : HttpFunc) (ctx : HttpContext) -> 
