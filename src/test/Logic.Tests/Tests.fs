@@ -391,123 +391,6 @@ let validationTests =
   ]
 
 [<Tests>]
-let cancelTests =
-  testList "Cancel tests" [
-    test "A waiting request is cancel by employee" {
-        let request1 = {
-            UserId = 1
-            RequestId = Guid.NewGuid()
-            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
-            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
-        }
-        let guid1 = request1.RequestId
-       
-        Given [RequestCreated  request1]
-        |> ConnectedAs (Employee 1)
-        |> When (CancelRequest (1, guid1))
-        |> Then (Ok [RequestCanceled request1]) "The request should have been canceled"
-    }
-    test "A waiting request can't be cancel by another employee" {
-        let request1 = {
-            UserId = 1
-            RequestId = Guid.Empty
-            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
-            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
-        }
-        let guid1 = request1.RequestId
-       
-        Given [RequestCreated  request1]
-        |> ConnectedAs (Employee 2)
-        |> When (CancelRequest (1, guid1))
-        |> Then (Error "Unauthorized") "The request should have been canceled"
-    }
-    test "A Validated request is cancel by employee" {
-        let request1 = {
-            UserId = 1
-            RequestId = Guid.Empty
-            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
-            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
-        }
-        let guid1 = request1.RequestId
-       
-        Given [RequestValidated  request1]
-        |> ConnectedAs (Employee 1)
-        |> When (CancelRequest (1, guid1))
-        |> Then (Ok [RequestCanceled request1]) "The request should not have been canceled"
-    }
-    test "A Validated request can't be cancel by another employee" {
-    let request1 = {
-        UserId = 1
-        RequestId = Guid.Empty
-        Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
-        End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
-    }
-    let guid1 = request1.RequestId
-       
-    Given [RequestValidated  request1]
-    |> ConnectedAs (Employee 2)
-    |> When (CancelRequest (1, guid1))
-    |> Then (Error "Unauthorized") "The request should not have been canceled"
-    }
-    test "A request in the past can't be cancel by employee" {
-    let request1 = {
-        UserId = 1
-        RequestId = Guid.Empty
-        Start = { Date = DateTime(2000, 10, 1); HalfDay = AM }
-        End = { Date = DateTime(2000, 10, 1); HalfDay = PM }
-    }
-    let guid1 = request1.RequestId
-       
-    Given [RequestValidated  request1]
-    |> ConnectedAs (Employee 1)
-    |> When (CancelRequest (1, guid1))
-    |> Then (Error "The request starts in the past") "The request should not have been canceled"
-    }
-    test "A request for today can't be cancel by employee" {
-    let request1 = {
-        UserId = 1
-        RequestId = Guid.Empty
-        Start = { Date = DateTime(2018, 11, 5); HalfDay = AM }
-        End = { Date = DateTime(2018, 11, 5); HalfDay = PM }
-    }
-    let guid1 = request1.RequestId
-       
-    Given [RequestValidated  request1]
-    |> ConnectedAs (Employee 1)
-    |> When (CancelRequest (1, guid1))
-    |> Then (Error "The request starts in the past") "The request should not have been canceled"
-    }
-    test "A request for tomorrow can be cancel by employee" {
-    let request1 = {
-        UserId = 1
-        RequestId = Guid.Empty
-        Start = { Date = DateTime(2018, 11, 6); HalfDay = AM }
-        End = { Date = DateTime(2018, 11, 6); HalfDay = PM }
-    }
-    let guid1 = request1.RequestId
-       
-    Given [RequestValidated  request1]
-    |> ConnectedAs (Employee 1)
-    |> When (CancelRequest (1, guid1))
-    |> Then (Ok [RequestCanceled request1]) "The request should have been canceled"
-    }
-    test "A request can't be cancel by manager" {
-    let request1 = {
-        UserId = 1
-        RequestId = Guid.Empty
-        Start = { Date = DateTime(2018, 11, 6); HalfDay = AM }
-        End = { Date = DateTime(2018, 11, 6); HalfDay = PM }
-    }
-    let guid1 = request1.RequestId
-       
-    Given [RequestValidated  request1]
-    |> ConnectedAs (Manager)
-    |> When (CancelRequest (1, guid1))
-    |> Then (Error "Unauthorized") "The request should not have been canceled"
-    }
-  ]
-
-[<Tests>]
 let refuseTests =
   testList "Refuse tests" [
     test "A waiting request is refused by manager" {
@@ -565,5 +448,423 @@ let refuseTests =
         |> ConnectedAs (Manager)
         |> When (RefuseRequest (1, guid1))
         |> Then (Error "Invalid state for action") "The request should have been refused"
+    }
+  ]
+
+[<Tests>]
+let cancelAsEmployeeTests =
+  testList "Cancel tests" [
+    test "A waiting request is cancel by employee" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCreated  request1]
+        |> ConnectedAs (Employee 1)
+        |> When (EmployeeCancelRequest (1, guid1))
+        |> Then (Ok [RequestCanceledByEmployee request1]) "The request should have been canceled"
+    }
+    test "A waiting request can't be cancel by another employee" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.Empty
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCreated  request1]
+        |> ConnectedAs (Employee 2)
+        |> When (EmployeeCancelRequest (1, guid1))
+        |> Then (Error "Unauthorized") "The request should have been canceled"
+    }
+    test "A Validated request is cancel by employee" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.Empty
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestValidated  request1]
+        |> ConnectedAs (Employee 1)
+        |> When (EmployeeCancelRequest (1, guid1))
+        |> Then (Ok [RequestCanceledByEmployee request1]) "The request should not have been canceled"
+    }
+    test "A Validated request can't be cancel by another employee" {
+    let request1 = {
+        UserId = 1
+        RequestId = Guid.Empty
+        Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+        End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+    }
+    let guid1 = request1.RequestId
+       
+    Given [RequestValidated  request1]
+    |> ConnectedAs (Employee 2)
+    |> When (EmployeeCancelRequest (1, guid1))
+    |> Then (Error "Unauthorized") "The request should not have been canceled"
+    }
+    test "A request in the past can't be cancel by employee" {
+    let request1 = {
+        UserId = 1
+        RequestId = Guid.Empty
+        Start = { Date = DateTime(2000, 10, 1); HalfDay = AM }
+        End = { Date = DateTime(2000, 10, 1); HalfDay = PM }
+    }
+    let guid1 = request1.RequestId
+       
+    Given [RequestValidated  request1]
+    |> ConnectedAs (Employee 1)
+    |> When (EmployeeCancelRequest (1, guid1))
+    |> Then (Error "The request starts in the past") "The request should not have been canceled"
+    }
+    test "A request for today can't be cancel by employee" {
+    let request1 = {
+        UserId = 1
+        RequestId = Guid.Empty
+        Start = { Date = DateTime(2018, 11, 5); HalfDay = AM }
+        End = { Date = DateTime(2018, 11, 5); HalfDay = PM }
+    }
+    let guid1 = request1.RequestId
+       
+    Given [RequestValidated  request1]
+    |> ConnectedAs (Employee 1)
+    |> When (EmployeeCancelRequest (1, guid1))
+    |> Then (Error "The request starts in the past") "The request should not have been canceled"
+    }
+    test "A request for tomorrow can be cancel by employee" {
+    let request1 = {
+        UserId = 1
+        RequestId = Guid.Empty
+        Start = { Date = DateTime(2018, 11, 6); HalfDay = AM }
+        End = { Date = DateTime(2018, 11, 6); HalfDay = PM }
+    }
+    let guid1 = request1.RequestId
+       
+    Given [RequestValidated  request1]
+    |> ConnectedAs (Employee 1)
+    |> When (EmployeeCancelRequest (1, guid1))
+    |> Then (Ok [RequestCanceledByEmployee request1]) "The request should have been canceled"
+    }
+    test "A request can't be cancel by manager" {
+    let request1 = {
+        UserId = 1
+        RequestId = Guid.Empty
+        Start = { Date = DateTime(2018, 11, 6); HalfDay = AM }
+        End = { Date = DateTime(2018, 11, 6); HalfDay = PM }
+    }
+    let guid1 = request1.RequestId
+       
+    Given [RequestValidated  request1]
+    |> ConnectedAs (Manager)
+    |> When (EmployeeCancelRequest (1, guid1))
+    |> Then (Error "Unauthorized") "The request should not have been canceled"
+    }
+  ]
+
+[<Tests>]
+let askCanceledTests =
+  testList "AskCanceled tests" [
+    //user tests
+    test "A Validated request is asked to be cancel by employee" {
+        let request1 = {
+            UserId = 1
+            RequestId =Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestValidated  request1]
+        |> ConnectedAs (Employee 1)
+        |> When (AskCancelRequest (1, guid1))
+        |> Then (Ok [RequestAskedCancel request1]) "The request should have been asked cancel"
+    }
+    test "A Validated request can't be asked to be cancel by another employee" {
+        let request1 = {
+            UserId = 1
+            RequestId =Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestValidated  request1]
+        |> ConnectedAs (Employee 2)
+        |> When (AskCancelRequest (1, guid1))
+        |> Then (Error "Unauthorized") "The request should not have been asked to be cancel"
+    }
+    test "A Validated request can't be asked to be cancel by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId =Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestValidated  request1]
+        |> ConnectedAs (Manager)
+        |> When (AskCancelRequest (1, guid1))
+        |> Then (Error "Unauthorized") "The request should not have been asked to be cancel"
+    }
+  ]
+
+[<Tests>]
+let refuseCancelTests =
+  testList "CancelRefused tests" [
+    //user tests
+    test "An AskCanceled request is cancelRefused by an employee" {
+        let request1 = {
+            UserId = 1
+            RequestId =Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestAskedCancel  request1]
+        |> ConnectedAs (Employee 1)
+        |> When (RefuseCanceledRequest (1, guid1))
+        |> Then (Error "Unauthorized") "The request should not have been cancel"
+    }
+    test "An AskCanceled request is cancelRefused by a manager" {
+        let request1 = {
+            UserId = 1
+            RequestId =Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestAskedCancel  request1]
+        |> ConnectedAs (Manager)
+        |> When (RefuseCanceledRequest (1, guid1))
+        |> Then (Ok [RequestCancelRefused request1]) "The request should not have been cancel"
+    }
+    //state tests
+    test "An PendingValidation request can't be cancelRefused by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCreated request1]
+        |> ConnectedAs (Manager)
+        |> When (RefuseCanceledRequest (1, guid1))
+        |> Then (Error "Invalid state for action") "The request should have been canceled"
+    }
+    test "An Validated request can't be cancelRefused by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestValidated request1]
+        |> ConnectedAs (Manager)
+        |> When (RefuseCanceledRequest (1, guid1))
+        |> Then (Error "Invalid state for action") "The request should have been canceled"
+    }
+    test "An Refused request can't be cancelRefused by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestRefused request1]
+        |> ConnectedAs (Manager)
+        |> When (RefuseCanceledRequest (1, guid1))
+        |> Then (Error "Invalid state for action") "The request should not have been canceled"
+    }
+    test "An CanceledByEmployee request can't be cancelRefused by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCanceledByEmployee request1]
+        |> ConnectedAs (Manager)
+        |> When (RefuseCanceledRequest (1, guid1))
+        |> Then (Error "Invalid state for action") "The request should not have been canceled"
+    }
+    test "An CancelRefused request can't be cancelRefused by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCancelRefused request1]
+        |> ConnectedAs (Manager)
+        |> When (RefuseCanceledRequest (1, guid1))
+        |> Then (Error "Invalid state for action") "The request should have been canceled"
+    }
+    test "An CanceledByManager request can't be cancelRefused by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCanceledByManager request1]
+        |> ConnectedAs (Manager)
+        |> When (RefuseCanceledRequest (1, guid1))
+        |> Then (Error "Invalid state for action") "The request should have been canceled"
+    }
+
+    test "An AskCanceled request can be cancelrefused by a manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestAskedCancel  request1]
+        |> ConnectedAs (Manager)
+        |> When (RefuseCanceledRequest (1, guid1))
+        |> Then (Ok [RequestCancelRefused request1]) "The request should have been cancel refused"
+    }
+  ]
+
+[<Tests>]
+let cancelAsManagerTests =
+  testList "Manager Cancel tests" [
+    //user tests
+    test "An AskCanceled request can be cancel by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestAskedCancel  request1]
+        |> ConnectedAs (Manager)
+        |> When (ManagerCancelRequest (1, guid1))
+        |> Then (Ok [RequestCanceledByManager request1]) "The request should have been canceled"
+    }
+    test "An AskCanceled request can't be cancel by employee" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestAskedCancel  request1]
+        |> ConnectedAs (Employee 1)
+        |> When (ManagerCancelRequest (1, guid1))
+        |> Then (Error "Unauthorized") "The request should have been canceled"
+    }
+    //state tests
+    test "An AskCanceled request is cancel by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestAskedCancel  request1]
+        |> ConnectedAs (Manager)
+        |> When (ManagerCancelRequest (1, guid1))
+        |> Then (Ok [RequestCanceledByManager request1]) "The request should have been canceled"
+    }
+    test "An CancelRefused request is cancel by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCancelRefused request1]
+        |> ConnectedAs (Manager)
+        |> When (ManagerCancelRequest (1, guid1))
+        |> Then (Ok [RequestCanceledByManager request1]) "The request should have been canceled"
+    }
+    test "An Validated request is cancel by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestValidated request1]
+        |> ConnectedAs (Manager)
+        |> When (ManagerCancelRequest (1, guid1))
+        |> Then (Ok [RequestCanceledByManager request1]) "The request should have been canceled"
+    }
+    test "An PendingValidation request is cancel by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCreated request1]
+        |> ConnectedAs (Manager)
+        |> When (ManagerCancelRequest (1, guid1))
+        |> Then (Ok [RequestCanceledByManager request1]) "The request should have been canceled"
+    }
+    test "An Refused request can't be cancel by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestRefused request1]
+        |> ConnectedAs (Manager)
+        |> When (ManagerCancelRequest (1, guid1))
+        |> Then (Error "Invalid state for action") "The request should not have been canceled"
+    }
+    test "An CanceledByEmployee request can't be cancel by manager" {
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2020, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2020, 10, 1); HalfDay = PM }
+        }
+        let guid1 = request1.RequestId
+       
+        Given [RequestCanceledByEmployee request1]
+        |> ConnectedAs (Manager)
+        |> When (ManagerCancelRequest (1, guid1))
+        |> Then (Error "Invalid state for action") "The request should not have been canceled"
     }
   ]

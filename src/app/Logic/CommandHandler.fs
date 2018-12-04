@@ -40,6 +40,18 @@ module CommandHandler =
 
         results.Length > 0
 
+    let getRequestById requestState =
+        
+        match requestState with
+        | PendingValidation request ->
+            Ok [RequestCreated request]
+        | Validated request ->
+            Ok [RequestValidated request]
+        | _ ->
+            Error "Request cannot be found"
+
+    ////////////////////////////////////////////////////////////////////////////
+
     let createRequest activeUserRequests  request dateProviderService =
         let dateProviderService = dateProviderService
         let dateProvider = dateProviderService :>ICustomDate
@@ -58,7 +70,7 @@ module CommandHandler =
         if request.Start.Date <= dateProvider.Now() then
             Error "The request starts in the past"
         else
-            Ok [RequestCanceled request]
+            Ok [RequestCanceledByEmployee request]
 
     let refuseRequest (requestState:RequestState) dateProviderService =
         let dateProviderService = dateProviderService
@@ -71,6 +83,11 @@ module CommandHandler =
                 Ok [RequestRefused request]
         | _ -> Error "Invalid state for action"
 
+    let askCancelRequest (requestState:RequestState) =
+        match requestState with
+        | Validated request-> 
+                Ok [RequestAskedCancel request]
+        | _ -> Error "Invalid state for action"
 
     let validateRequest requestState =
         match requestState with
@@ -79,27 +96,43 @@ module CommandHandler =
         | _ ->
             Error "Request cannot be validated"
 
-    let getRequestById requestState =
-        
-        match requestState with
-        | PendingValidation request ->
-            Ok [RequestCreated request]
-        | Validated request ->
-            Ok [RequestValidated request]
-        | _ ->
-            Error "Request cannot be found"
+    let refuseCanceledRequest requestState =
+         match requestState with
+            | AskCanceled request-> 
+                    Ok [RequestCancelRefused request]
+            | _ -> Error "Invalid state for action"
+
+    let managerCancelRequest requestState =
+         match requestState with
+            | PendingValidation request-> 
+                    Ok [RequestCanceledByManager request]
+            | Validated request-> 
+                    Ok [RequestCanceledByManager request]
+            | AskCanceled request-> 
+                    Ok [RequestCanceledByManager request]
+            | CancelRefused request-> 
+                    Ok [RequestCanceledByManager request]
+            | _ -> Error "Invalid state for action"
+         
+    ////////////////////////////////////////////////////////////////////////////
 
     let convertStates(requestState:RequestState)  =
-        match requestState with 
+        match requestState with
+        | NotCreated -> None
         | PendingValidation request ->
              Some (RequestCreated request)
         | Validated request ->
              Some (RequestValidated request)
-        | Canceled request ->
-             Some (RequestCanceled request)
-        | NotCreated -> None
         | Refused request -> 
-            Some (RequestRefused request)
+             Some (RequestRefused request)
+        | CanceledByEmployee request ->
+             Some (RequestCanceledByEmployee request)
+        | AskCanceled request ->
+             Some(RequestAskedCancel request)
+        | CancelRefused request ->
+             Some(RequestCancelRefused request)
+        | CanceledByManager request ->
+             Some(RequestCanceledByManager request)
 
     let getAllRequest (userRequests: UserRequestsState)  =
         let result = 
@@ -134,7 +167,6 @@ module CommandHandler =
                         |> Seq.map (fun state -> state.Request)
 
                     createRequest activeUserRequests request dateProviderService
-
             | ValidateRequest (_, requestId) ->
                 if user <> Manager then
                     Error "Unauthorized"
@@ -147,12 +179,31 @@ module CommandHandler =
                 else
                     let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
                     refuseRequest requestState dateProviderService
-            | CancelRequest (_, requestId) ->
+            | EmployeeCancelRequest (_, requestId) ->
                 if user = Manager then
                     Error "Unauthorized"
                 else
                     let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
                     cancelRequest requestState.Request dateProviderService
+            | AskCancelRequest (_, requestId) ->
+                if user = Manager then
+                    Error "Unauthorized"
+                else
+                    let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
+                    askCancelRequest requestState
+            | RefuseCanceledRequest (_, requestId) ->
+                if user <> Manager then
+                    Error "Unauthorized"
+                else
+                    let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
+                    refuseCanceledRequest requestState
+            | ManagerCancelRequest (_, requestId) ->
+                if user <> Manager then
+                    Error "Unauthorized"
+                else
+                   let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
+                   managerCancelRequest requestState
+
             | GetRequestById (_, requestId) ->
                 let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
                 getRequestById requestState 

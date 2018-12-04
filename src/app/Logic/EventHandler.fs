@@ -7,8 +7,11 @@ module EventHandler =
         match event with
         | RequestCreated request -> PendingValidation request
         | RequestValidated request -> Validated request
-        | RequestCanceled request -> Canceled request
         | RequestRefused request -> Refused request
+        | RequestCanceledByEmployee request -> CanceledByEmployee request
+        | RequestAskedCancel request -> AskCanceled request
+        | RequestCancelRefused request -> CancelRefused request
+        | RequestCanceledByManager request -> CanceledByManager request
 
     let evolveUserRequests (userRequests: UserRequestsState) (event: RequestEvent) =
         let requestState = defaultArg (Map.tryFind event.Request.RequestId userRequests) NotCreated

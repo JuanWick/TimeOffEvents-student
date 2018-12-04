@@ -31,51 +31,73 @@ module DomainTypes =
         | PendingValidation of TimeOffRequest
         | Validated of TimeOffRequest
         | Refused of TimeOffRequest
-        | Canceled of TimeOffRequest with
+        | CanceledByEmployee of TimeOffRequest
+        | AskCanceled of TimeOffRequest
+        | CancelRefused of TimeOffRequest
+        | CanceledByManager of TimeOffRequest with
         member this.Request =
             match this with
             | NotCreated -> invalidOp "Not created"
             | PendingValidation request
             | Validated request -> request
-            | Canceled request -> request
             | Refused request -> request
+            | CanceledByEmployee request -> request
+            | AskCanceled request -> request
+            | CancelRefused request -> request
+            | CanceledByManager request -> request
         member this.IsActive =
             match this with
             | NotCreated -> false
-            | PendingValidation _
+            | PendingValidation _ -> true
             | Validated _ -> true
-            | Canceled _ -> false
             | Refused _ -> false
+            | CanceledByEmployee _ -> false
+            | AskCanceled _ -> true
+            | CancelRefused _ -> true
+            | CanceledByManager _ -> false
 
     type RequestEvent =
     | RequestCreated of TimeOffRequest
     | RequestValidated of TimeOffRequest
     | RequestRefused of TimeOffRequest
-    | RequestCanceled of TimeOffRequest with
+    | RequestCanceledByEmployee of TimeOffRequest 
+    | RequestAskedCancel of TimeOffRequest
+    | RequestCancelRefused of TimeOffRequest
+    | RequestCanceledByManager of TimeOffRequest
+    with
         member this.Request =
             match this with
             | RequestCreated request -> request
             | RequestValidated request -> request
-            | RequestCanceled request -> request
             | RequestRefused request -> request
+            | RequestCanceledByEmployee request -> request
+            | RequestAskedCancel request -> request
+            | RequestCancelRefused request -> request
+            | RequestCanceledByManager request -> request
 
     type UserRequestsState = Map<Guid, RequestState>
 
     type Command =
-        | RequestTimeOff of TimeOffRequest
-        | ValidateRequest of UserId * Guid
         | GetRequestById of UserId * Guid
         | GetAllRequest of UserId
-        | RefuseRequest of UserId * Guid 
-        | CancelRequest of UserId * Guid with
+        | RequestTimeOff of TimeOffRequest
+        | ValidateRequest of UserId * Guid
+        | RefuseRequest of UserId * Guid
+        | EmployeeCancelRequest of UserId * Guid 
+        | AskCancelRequest of UserId * Guid
+        | RefuseCanceledRequest of UserId * Guid 
+        | ManagerCancelRequest of UserId * Guid with
         member this.UserId =
             match this with
-            | RequestTimeOff request -> request.UserId
-            | ValidateRequest (userId, _) -> userId
             | GetRequestById (userId, _) -> userId
             | GetAllRequest (userId) -> userId 
-            | CancelRequest (userId, _) -> userId
+            | RequestTimeOff request -> request.UserId
+            | ValidateRequest (userId, _) -> userId
             | RefuseRequest (userId, _) -> userId
+            | EmployeeCancelRequest (userId, _) -> userId
+            | AskCancelRequest (userId, _) -> userId
+            | RefuseCanceledRequest (userId, _) -> userId
+            | ManagerCancelRequest (userId, _) -> userId
      
     //type Query = 
     //    | GetAllRequest of UserId

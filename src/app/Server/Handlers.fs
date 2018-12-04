@@ -44,29 +44,6 @@ module Handlers =
                 | Error message ->
                     return! (BAD_REQUEST message) next ctx 
             }
-    let cancelRequestTimeOffByIdHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) = 
-        fun (next : HttpFunc) (ctx : HttpContext) -> 
-            task { 
-               
-                let command = CancelRequest (idUser, idRequest)
-                let result = handleCommand(eventStore) (user) (command)
-                match result with
-                | Ok _ -> return! json result next ctx
-                | Error message ->
-                    return! (BAD_REQUEST message) next ctx 
-            }
-
-    let refuseRequestTimeOffByIdHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) = 
-        fun (next : HttpFunc) (ctx : HttpContext) -> 
-            task { 
-               
-                let command = RefuseRequest (idUser, idRequest)
-                let result = handleCommand(eventStore) (user) (command)
-                match result with
-                | Ok _ -> return! json result next ctx
-                | Error message ->
-                    return! (BAD_REQUEST message) next ctx 
-            }
 
     let requestTimeOffListHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int) = 
         fun (next : HttpFunc) (ctx : HttpContext) -> 
@@ -77,7 +54,7 @@ module Handlers =
                 | Ok _ -> return! json result next ctx
                 | Error message ->
                     return! (BAD_REQUEST message) next ctx 
-            }
+        }
 
     let requestTimeOffHandler (eventStore: IStore<UserId, RequestEvent>) (user:User)  =
         fun (next: HttpFunc) (ctx: HttpContext) ->
@@ -112,28 +89,67 @@ module Handlers =
                     return! (BAD_REQUEST message) next ctx
             }
 
-    let infoByUser (handleCommand: Command -> Result<RequestEvent list, string>) =
+    let refuseRequestHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) = 
+            fun (next : HttpFunc) (ctx : HttpContext) -> 
+                task { 
+               
+                    let command = RefuseRequest (idUser, idRequest)
+                    let result = handleCommand(eventStore) (user) (command)
+                    match result with
+                    | Ok _ -> return! json result next ctx
+                    | Error message ->
+                        return! (BAD_REQUEST message) next ctx 
+                }
+
+    let employeeCancelRequestHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) = 
+        fun (next : HttpFunc) (ctx : HttpContext) -> 
+            task {
+                let command = EmployeeCancelRequest (idUser, idRequest)
+                let result = handleCommand(eventStore) (user) (command)
+                match result with
+                | Ok _ -> return! json result next ctx
+                | Error message ->
+                    return! (BAD_REQUEST message) next ctx
+            }  
+
+    let askCancelRequestHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) =
         fun (next: HttpFunc) (ctx: HttpContext) ->
             task {
-                let debutB = {
-                    Date =  DateTime.Now
-                    HalfDay = AM
-                }
-
-                let finB = {
-                    Date =  DateTime.Now
-                    HalfDay = AM
-                }
-
-                let timeOffRequest = {
-                    UserId = 1
-                    RequestId = Guid.Empty
-                    Start =  debutB
-                    End =  finB
-                }
-         
-                return! json timeOffRequest next ctx
+                let userAndRequestId = ctx.BindQueryString<UserAndRequestId>()
+                let command = AskCancelRequest (idUser, idRequest)
+                let result = handleCommand(eventStore) (user) (command)
+                match result with
+                | Ok [RequestAskedCancel timeOffRequest] -> return! json timeOffRequest next ctx
+                | Ok _ -> return! Successful.NO_CONTENT next ctx
+                | Error message ->
+                    return! (BAD_REQUEST message) next ctx
             }
+
+    let refuseCanceledRequestHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) =
+        fun (next: HttpFunc) (ctx: HttpContext) ->
+        task {//TODO
+            let userAndRequestId = ctx.BindQueryString<UserAndRequestId>()
+            let command = AskCancelRequest (idUser, idRequest)
+            let result = handleCommand(eventStore) (user) (command)
+            match result with
+            | Ok [RequestAskedCancel timeOffRequest] -> return! json timeOffRequest next ctx
+            | Ok _ -> return! Successful.NO_CONTENT next ctx
+            | Error message ->
+                return! (BAD_REQUEST message) next ctx
+    }
+
+    let managerCancelRequestHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) =
+        fun (next: HttpFunc) (ctx: HttpContext) ->
+        task {//TODO
+            let userAndRequestId = ctx.BindQueryString<UserAndRequestId>()
+            let command = AskCancelRequest (idUser, idRequest)
+            let result = handleCommand(eventStore) (user) (command)
+            match result with
+            | Ok [RequestAskedCancel timeOffRequest] -> return! json timeOffRequest next ctx
+            | Ok _ -> return! Successful.NO_CONTENT next ctx
+            | Error message ->
+                return! (BAD_REQUEST message) next ctx
+    }
 
     
     
