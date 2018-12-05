@@ -106,7 +106,7 @@ module CommandHandler =
         | PendingValidation request ->
             Ok [RequestValidated request]
         | _ ->
-            Error "Request cannot be validated"
+            Error "Invalid state for action"
 
     let refuseCanceledRequest requestState =
          match requestState with
