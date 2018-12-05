@@ -63,14 +63,20 @@ module CommandHandler =
         else 
             Ok [RequestCreated request]
 
-    let cancelRequest request dateProviderService =
+    let employeeCancelRequest (requestState:RequestState) dateProviderService =
         let dateProviderService = dateProviderService
         let dateProvider = dateProviderService :>ICustomDate
+        let request = requestState.Request
 
         if request.Start.Date <= dateProvider.Now() then
             Error "The request starts in the past"
         else
-            Ok [RequestCanceledByEmployee request]
+            match requestState with
+            | PendingValidation request-> 
+                Ok [RequestCanceledByEmployee request]
+            | Validated request ->
+                Ok [RequestCanceledByEmployee request]
+            | _ -> Error "Invalid state for action"
 
     let refuseRequest (requestState:RequestState) dateProviderService =
         let dateProviderService = dateProviderService
@@ -83,11 +89,17 @@ module CommandHandler =
                 Ok [RequestRefused request]
         | _ -> Error "Invalid state for action"
 
-    let askCancelRequest (requestState:RequestState) =
-        match requestState with
-        | Validated request-> 
+    let askCancelRequest (requestState:RequestState) dateProviderService =
+        let dateProviderService = dateProviderService
+        let dateProvider = dateProviderService :>ICustomDate
+        let request = requestState.Request
+        if request.Start.Date <= dateProvider.Now() then
+            match requestState with
+            | Validated request-> 
                 Ok [RequestAskedCancel request]
-        | _ -> Error "Invalid state for action"
+            | _ -> Error "Invalid state for action"
+        else
+            Error "The request starts in the futur"
 
     let validateRequest requestState =
         match requestState with
@@ -184,13 +196,13 @@ module CommandHandler =
                     Error "Unauthorized"
                 else
                     let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
-                    cancelRequest requestState.Request dateProviderService
+                    employeeCancelRequest requestState dateProviderService
             | AskCancelRequest (_, requestId) ->
                 if user = Manager then
                     Error "Unauthorized"
                 else
                     let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
-                    askCancelRequest requestState
+                    askCancelRequest requestState dateProviderService
             | RefuseCanceledRequest (_, requestId) ->
                 if user <> Manager then
                     Error "Unauthorized"
