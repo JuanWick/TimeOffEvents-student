@@ -8,20 +8,23 @@ open TimeOff.DtoTypes
 open TimeOff.Adapters
 open System
 open Giraffe
+open TimeOff.QueryHandler
 open TimeOff.CommandHandler
 open TimeOff.EventHandler
 open EventStorage
 
 module Handlers =
 
+    //Command Handler
     let handleCommand (eventStore: IStore<UserId, RequestEvent>) (user: User) (command: Command) =
+        printfn("handleCommand")
+
         let userId = command.UserId
 
         let eventStream = eventStore.GetStream(userId)
         let state = eventStream.ReadAll() |> Seq.fold evolveUserRequests Map.empty
 
         let dateProviderService = new DateProvider.DateProviderService()
-
         // Decide how to handle the command
         let result = decide state user command dateProviderService
 
@@ -32,29 +35,6 @@ module Handlers =
 
         // Finally, return the result
         result
-
-    let requestTimeOffByIdHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) = 
-        fun (next : HttpFunc) (ctx : HttpContext) -> 
-            task { 
-               
-                let command = GetRequestById (idUser, idRequest)
-                let result = handleCommand(eventStore) (user) (command)
-                match result with
-                | Ok _ -> return! json result next ctx
-                | Error message ->
-                    return! (BAD_REQUEST message) next ctx 
-            }
-
-    let requestTimeOffListHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int) = 
-        fun (next : HttpFunc) (ctx : HttpContext) -> 
-            task {               
-                let command = GetAllRequest (idUser)
-                let result = handleCommand(eventStore) (user) (command)
-                match result with
-                | Ok _ -> return! json result next ctx
-                | Error message ->
-                    return! (BAD_REQUEST message) next ctx 
-        }
 
     let requestTimeOffHandler (eventStore: IStore<UserId, RequestEvent>) (user:User)  =
         fun (next: HttpFunc) (ctx: HttpContext) ->
@@ -127,12 +107,11 @@ module Handlers =
 
     let refuseCanceledRequestHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) =
         fun (next: HttpFunc) (ctx: HttpContext) ->
-        task {//TODO
-            let userAndRequestId = ctx.BindQueryString<UserAndRequestId>()
-            let command = AskCancelRequest (idUser, idRequest)
+        task {
+            let command = RefuseCanceledRequest (idUser, idRequest)
             let result = handleCommand(eventStore) (user) (command)
             match result with
-            | Ok [RequestAskedCancel timeOffRequest] -> return! json timeOffRequest next ctx
+            | Ok [RequestCancelRefused timeOffRequest] -> return! json timeOffRequest next ctx
             | Ok _ -> return! Successful.NO_CONTENT next ctx
             | Error message ->
                 return! (BAD_REQUEST message) next ctx
@@ -140,19 +119,55 @@ module Handlers =
 
     let managerCancelRequestHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) =
         fun (next: HttpFunc) (ctx: HttpContext) ->
-        task {//TODO
-            let userAndRequestId = ctx.BindQueryString<UserAndRequestId>()
-            let command = AskCancelRequest (idUser, idRequest)
+        task {
+            let command = ManagerCancelRequest (idUser, idRequest)
             let result = handleCommand(eventStore) (user) (command)
             match result with
-            | Ok [RequestAskedCancel timeOffRequest] -> return! json timeOffRequest next ctx
+            | Ok [RequestCanceledByManager timeOffRequest] -> return! json timeOffRequest next ctx
             | Ok _ -> return! Successful.NO_CONTENT next ctx
             | Error message ->
                 return! (BAD_REQUEST message) next ctx
     }
 
+    //Request Handler //TODO
+    let handleQuery (eventStore: IStore<UserId, RequestEvent>) (user: User) (query: Query) =
+        let userId = query.UserId
+
+        let eventStream = eventStore.GetStream(userId)
+        let state = eventStream.ReadAll() |> Seq.fold evolveUserRequests Map.empty
+
+        let dateProviderService = new DateProvider.DateProviderService()
+
+        let result = execute state user query dateProviderService//TO DO a modifier
+
+        match result with
+        | Ok events -> eventStream.Append(events)
+        | _ -> ()
+
+        result
     
-    
+    let requestTimeOffByIdHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int, idRequest : Guid) = 
+        fun (next : HttpFunc) (ctx : HttpContext) -> 
+            task { 
+               
+                let command = GetRequestById (idUser, idRequest)
+                let result = handleQuery(eventStore) (user) (command)
+                match result with
+                | Ok _ -> return! json result next ctx
+                | Error message ->
+                    return! (BAD_REQUEST message) next ctx 
+            }
+
+    let requestTimeOffListHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int) = 
+        fun (next : HttpFunc) (ctx : HttpContext) -> 
+            task {               
+                let command = GetAllRequest (idUser)
+                let result = handleQuery(eventStore) (user) (command)
+                match result with
+                | Ok _ -> return! json result next ctx
+                | Error message ->
+                    return! (BAD_REQUEST message) next ctx 
+        }
     
 
 

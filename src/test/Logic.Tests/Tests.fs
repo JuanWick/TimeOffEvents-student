@@ -24,7 +24,7 @@ let Then expected message (events: RequestEvent list, user: User, command: Comma
 
     let result = decide userRequestsState user command dateProviderService
     Expect.equal result expected message
-
+(*
 [<Tests>]
 let overlapTests = 
   testList "Overlap tests" [
@@ -1302,5 +1302,6 @@ let cancelAsManagerTests =
         |> ConnectedAs (Manager)
         |> When (ManagerCancelRequest (1, guid1))
         |> Then (Error "Invalid state for action") "The request should not have been canceled"
-    }
+    } 
   ]
+  *)

@@ -78,8 +78,6 @@ module DomainTypes =
     type UserRequestsState = Map<Guid, RequestState>
 
     type Command =
-        | GetRequestById of UserId * Guid
-        | GetAllRequest of UserId
         | RequestTimeOff of TimeOffRequest
         | ValidateRequest of UserId * Guid
         | RefuseRequest of UserId * Guid
@@ -89,8 +87,6 @@ module DomainTypes =
         | ManagerCancelRequest of UserId * Guid with
         member this.UserId =
             match this with
-            | GetRequestById (userId, _) -> userId
-            | GetAllRequest (userId) -> userId 
             | RequestTimeOff request -> request.UserId
             | ValidateRequest (userId, _) -> userId
             | RefuseRequest (userId, _) -> userId
@@ -99,11 +95,11 @@ module DomainTypes =
             | RefuseCanceledRequest (userId, _) -> userId
             | ManagerCancelRequest (userId, _) -> userId
      
-    //type Query = 
-    //    | GetAllRequest of UserId
-    //    | GetRequestById of UserId * Guid
-    //    member this.UserId =
-    //        match this with
-    //        | GetRequestById (userId, _) -> userId
-    //        | GetAllRequest (userId) -> userId 
+    type Query = 
+        | GetAllRequest of UserId
+        | GetRequestById of UserId * Guid
+        member this.UserId =
+            match this with
+            | GetRequestById (userId, _) -> userId
+            | GetAllRequest (userId) -> userId 
     

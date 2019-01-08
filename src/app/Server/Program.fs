@@ -27,12 +27,15 @@ let webApp (eventStore: IStore<UserId, RequestEvent>) =
                     (Auth.Handlers.requiresJwtTokenForAPI (fun user ->
                         choose [
                             POST >=> route "/request" >=> requestTimeOffHandler (eventStore) (user)
-                            GET >=> routef "/request/%i/%O" (requestTimeOffByIdHandler (eventStore) (user))
-                            POST >=> routef "/cancel-request/%i/%O" (employeeCancelRequestHandler (eventStore) (user))
-                            POST >=> routef "/refuse-request/%i/%O" (refuseRequestHandler (eventStore) (user))
-                            POST >=> routef "/ask-cancel-request/%i/%O" (askCancelRequestHandler (eventStore) (user))            
-                            GET >=> routef "/request/%i" (requestTimeOffListHandler (eventStore) (user))
                             POST >=> route "/validate-request" >=> validateRequestHandler (eventStore) (user)
+                            POST >=> routef "/refuse-request/%i/%O" (refuseRequestHandler (eventStore) (user))
+                            POST >=> routef "/cancel-request/%i/%O" (employeeCancelRequestHandler (eventStore) (user))                           
+                            POST >=> routef "/ask-cancel-request/%i/%O" (askCancelRequestHandler (eventStore) (user))                                        
+                            POST >=> routef "/refuse-cancel-request/%i/%O" (refuseCanceledRequestHandler (eventStore) (user))
+                            POST >=> routef "/manager-cancel-request/%i/%O" (managerCancelRequestHandler (eventStore) (user))
+
+                            GET >=> routef "/request/%i/%O" (requestTimeOffByIdHandler (eventStore) (user))
+                            GET >=> routef "/request/%i" (requestTimeOffListHandler (eventStore) (user))
                         ]
                     ))
             ])
@@ -58,6 +61,8 @@ let configureCors (builder: CorsPolicyBuilder) =
            |> ignore
 
 let configureApp (eventStore: IStore<UserId, RequestEvent>) (app: IApplicationBuilder) =
+    printfn "configureApp"
+
     let webApp = webApp eventStore
     let env = app.ApplicationServices.GetService<IHostingEnvironment>()
     (match env.IsDevelopment() with

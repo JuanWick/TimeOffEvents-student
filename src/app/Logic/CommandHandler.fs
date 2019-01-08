@@ -40,16 +40,6 @@ module CommandHandler =
 
         results.Length > 0
 
-    let getRequestById requestState =
-        
-        match requestState with
-        | PendingValidation request ->
-            Ok [RequestCreated request]
-        | Validated request ->
-            Ok [RequestValidated request]
-        | _ ->
-            Error "Request cannot be found"
-
     ////////////////////////////////////////////////////////////////////////////
 
     let createRequest activeUserRequests  request dateProviderService =
@@ -146,20 +136,6 @@ module CommandHandler =
         | CanceledByManager request ->
              Some(RequestCanceledByManager request)
 
-    let getAllRequest (userRequests: UserRequestsState)  =
-        let result = 
-            userRequests
-            |> Map.toSeq
-            |> Seq.map(fun(_, requestState) -> requestState)
-            |> Seq.map(convertStates)
-            |> Seq.where(fun r -> match r with
-                                    | None -> false
-                                    | _ -> true)
-            |> Seq.map(fun r -> r.Value)
-            |> Seq.toList
-
-        Ok result
-
     let decide (userRequests: UserRequestsState) (user:User) (command: Command) dateProviderService =
         let relatedUserId = command.UserId
         match user with
@@ -215,10 +191,4 @@ module CommandHandler =
                 else
                    let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
                    managerCancelRequest requestState
-
-            | GetRequestById (_, requestId) ->
-                let requestState = defaultArg (userRequests.TryFind requestId) NotCreated
-                getRequestById requestState 
-            | GetAllRequest (userId) ->
-                getAllRequest userRequests 
                 
