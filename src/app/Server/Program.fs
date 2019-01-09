@@ -34,8 +34,11 @@ let webApp (eventStore: IStore<UserId, RequestEvent>) =
                             POST >=> routef "/refuse-cancel-request/%i/%O" (refuseCanceledRequestHandler (eventStore) (user))
                             POST >=> routef "/manager-cancel-request/%i/%O" (managerCancelRequestHandler (eventStore) (user))
 
-                            GET >=> routef "/request/%i/%O" (requestTimeOffByIdHandler (eventStore) (user))
-                            GET >=> routef "/request/%i" (requestTimeOffListHandler (eventStore) (user))
+                            GET >=> routef "/requests/%i/%O" (requestTimeOffByIdHandler (eventStore) (user))
+                            GET >=> routef "/requests/%i" (requestTimeOffListByUserIdHandler (eventStore) (user))
+                            GET >=> routef "/requests/summary/%i" (requestTimeOffSummaryByUserIdHandler (eventStore) (user))
+                            GET >=> routef "/requests/history/%i" (requestTimeOffHistoryByUserIdHandler (eventStore) (user))
+
                         ]
                     ))
             ])

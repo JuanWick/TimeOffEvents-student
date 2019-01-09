@@ -129,7 +129,7 @@ module Handlers =
                 return! (BAD_REQUEST message) next ctx
     }
 
-    //Request Handler //TODO
+    //Request Handler 
     let handleQuery (eventStore: IStore<UserId, RequestEvent>) (user: User) (query: Query) =
         let userId = query.UserId
 
@@ -138,7 +138,7 @@ module Handlers =
 
         let dateProviderService = new DateProvider.DateProviderService()
 
-        let result = execute state user query dateProviderService//TO DO a modifier
+        let result = execute state user query dateProviderService
 
         match result with
         | Ok events -> eventStream.Append(events)
@@ -150,24 +150,52 @@ module Handlers =
         fun (next : HttpFunc) (ctx : HttpContext) -> 
             task { 
                
-                let command = GetRequestById (idUser, idRequest)
-                let result = handleQuery(eventStore) (user) (command)
+                let query = GetRequestById (idUser, idRequest)
+                let result = handleQuery(eventStore) (user) (query)
                 match result with
                 | Ok _ -> return! json result next ctx
                 | Error message ->
                     return! (BAD_REQUEST message) next ctx 
             }
 
-    let requestTimeOffListHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int) = 
+    let requestTimeOffListByUserIdHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int) = 
         fun (next : HttpFunc) (ctx : HttpContext) -> 
             task {               
-                let command = GetAllRequest (idUser)
-                let result = handleQuery(eventStore) (user) (command)
+                let query = GetAllRequestByUserId (idUser)
+                let result = handleQuery(eventStore) (user) (query)
                 match result with
                 | Ok _ -> return! json result next ctx
                 | Error message ->
                     return! (BAD_REQUEST message) next ctx 
-        }
+            }
+
+    let requestTimeOffSummaryByUserIdHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int) =
+        fun (next : HttpFunc) (ctx : HttpContext) -> 
+            task {
+
+                let eventStream = eventStore.GetStream(idUser)
+                let state = eventStream.ReadAll() |> Seq.fold evolveUserRequests Map.empty
+
+                let dateProviderService = new DateProvider.DateProviderService()
     
+                let query = GetSummaryByUserId (idUser)
+                let result = getSummaryByUserId (state) (user) (query) dateProviderService
+
+                match result with
+                | Ok _ -> return! json result next ctx
+                | Error message ->
+                    return! (BAD_REQUEST message) next ctx 
+            }
+    
+    let requestTimeOffHistoryByUserIdHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int) = //TODO
+        fun (next : HttpFunc) (ctx : HttpContext) -> 
+            task {               
+                let query = GetHistoryByUserId (idUser)
+                let result = handleQuery(eventStore) (user) (query)
+                match result with
+                | Ok _ -> return! json result next ctx
+                | Error message ->
+                    return! (BAD_REQUEST message) next ctx 
+            }
 
 

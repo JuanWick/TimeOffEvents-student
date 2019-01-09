@@ -96,10 +96,24 @@ module DomainTypes =
             | ManagerCancelRequest (userId, _) -> userId
      
     type Query = 
-        | GetAllRequest of UserId
+        | GetAllRequestByUserId of UserId
         | GetRequestById of UserId * Guid
+        | GetSummaryByUserId of UserId
+        | GetHistoryByUserId of UserId
         member this.UserId =
             match this with
             | GetRequestById (userId, _) -> userId
-            | GetAllRequest (userId) -> userId 
+            | GetAllRequestByUserId (userId) -> userId
+            | GetSummaryByUserId (userId) -> userId
+            | GetHistoryByUserId (userId) -> userId
+
+    type UserRequestSummary = {
+        UserId: UserId
+        Requests: RequestEvent List
+        ValidatedThisYear: int16
+        ReportedFromLastYear: int16
+        RequestsDoneThisYear: int16
+        RequestWaitingThisYear: int16
+        BalanceThisYear: int16
+    }
     
