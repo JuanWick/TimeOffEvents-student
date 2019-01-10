@@ -1316,14 +1316,14 @@ let summaryTests =
             UserId = 1
             RequestId = Guid.NewGuid()
             Start = { Date = DateTime(2018, 10, 1); HalfDay = AM }
-            End = { Date = DateTime(2018, 10, 5); HalfDay = PM }
+            End = { Date = DateTime(2018, 10, 1); HalfDay = PM }
         }
 
          let request2 = {
             UserId = 1
             RequestId = Guid.NewGuid()
             Start = { Date = DateTime(2018, 7, 1); HalfDay = AM }
-            End = { Date = DateTime(2018, 7, 3); HalfDay = AM }
+            End = { Date = DateTime(2018, 7, 2); HalfDay = AM }
         }
 
         let requestEvent1 = RequestValidated  request1
@@ -1331,14 +1331,45 @@ let summaryTests =
         let list = [requestEvent1; requestEvent2]
 
         let dateProviderService = new DateProvider.DateTestProviderService() //5/11/2018
-
-
         let result = getRequestSumValidatedThisYear list dateProviderService
 
-        Expect.equal result 7.5 "Should return 7.5"
+        Expect.equal result 2.5 "Should return 2.5"
     }
-   
-    test "Should not take invalid status request in the same year" {
+    test "Should return 0 when asked the sum of none validated request in the same year" {
+        // AM matin; PM après-midi
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 10, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 10, 1); HalfDay = PM }
+        }
+
+         let request2 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 7, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 7, 2); HalfDay = AM }
+        }
+
+        let requestEvent1 = RequestRefused  request1
+        let requestEvent2 = RequestRefused  request2
+        let list = [requestEvent1; requestEvent2]
+
+        let dateProviderService = new DateProvider.DateTestProviderService()
+        let result = getRequestSumValidatedThisYear list dateProviderService
+
+        Expect.equal result 0.0 "Should return 0"
+    }
+    test "Should return 0 when asked the sum of empty request in the same year" {
+        // AM matin; PM après-midi
+        let list = []
+
+        let dateProviderService = new DateProvider.DateTestProviderService()
+        let result = getRequestSumValidatedThisYear list dateProviderService
+
+        Expect.equal result 0.0 "Should return 0"
+    }  
+    test "Should not take invalid request status when asked the sum of none validated request in the same year" {
         // AM matin; PM après-midi
         let request1 = {
             UserId = 1
@@ -1378,7 +1409,6 @@ let summaryTests =
 
         Expect.equal result 7.5 "Should return 7.5"
     }
-
     test "Should return only the sum of 2 validated request in the same year" {
         // AM matin; PM après-midi
         let request1 = {
@@ -1414,18 +1444,15 @@ let summaryTests =
         let requestEvent3 = RequestValidated  request3
         let requestEvent4 = RequestValidated  request4
 
-
         let list = [requestEvent1; requestEvent2; requestEvent3; requestEvent4]
 
         let dateProviderService = new DateProvider.DateTestProviderService() //5/11/2018
-
 
         let result = getRequestSumValidatedThisYear list dateProviderService
 
         Expect.equal result 7.5 "Should return 7.5"
     }
-
-    test "Should properly truncate requests in the same year" {//TODO correct
+    test "Should properly truncate requests in the same year" {
         // AM matin; PM après-midi
         let request1 = {
             UserId = 1
@@ -1454,8 +1481,8 @@ let summaryTests =
         Expect.equal result 2.0 "Should return 2"
     }
 
-
-    test "Should report balance of the last year" {
+    //getReportFromLastYear
+    test "Should only report balance of validated request of the last year" {
         // AM matin; PM après-midi
         let request1 = {
             UserId = 1
@@ -1482,17 +1509,81 @@ let summaryTests =
         let requestEvent2 = RequestValidated  request2
         let requestEvent3 = RequestValidated  request3
 
-
         let list = [requestEvent1; requestEvent2; requestEvent3]
 
         let dateProviderService = new DateProvider.DateTestProviderService() //5/11/2018
-
 
         let result = getReportFromLastYear list dateProviderService
 
         Expect.equal result 58.0 "Should return 58"
     }
+    test "Should return 60 when report balance of empty validated request of the last year" {
+        // AM matin; PM après-midi
+        let request3 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 6, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 6, 1); HalfDay = AM }
+        }
 
+        let requestEvent3 = RequestValidated  request3
+
+        let list = [requestEvent3]
+
+        let dateProviderService = new DateProvider.DateTestProviderService() //5/11/2018
+
+        let result = getReportFromLastYear list dateProviderService
+
+        Expect.equal result 60.0 "Should return 60"
+    }
+    test "Should return 60 when report balance of the last year and there isn't" {
+        // AM matin; PM après-midi
+
+        let list = []
+
+        let dateProviderService = new DateProvider.DateTestProviderService() //5/11/2018
+
+        let result = getReportFromLastYear list dateProviderService
+
+        Expect.equal result 60.0 "Should return 60"
+    }
+    test "Should return negative balance when report balance of validated request of the last year" {
+        // AM matin; PM après-midi
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2017, 3, 1); HalfDay = AM }
+            End = { Date = DateTime(2017, 3, 25); HalfDay = AM }
+        }
+
+        let request2 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2017, 2, 1); HalfDay = AM }
+            End = { Date = DateTime(2017, 2, 25); HalfDay = PM }
+        }
+
+        let request3 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2017, 1, 1); HalfDay = AM }
+            End = { Date = DateTime(2017, 1, 25); HalfDay = PM }
+        }
+
+        let requestEvent1 = RequestValidated  request1
+        let requestEvent2 = RequestValidated  request2
+        let requestEvent3 = RequestValidated  request3
+
+        let list = [requestEvent1; requestEvent2; requestEvent3]
+
+        let dateProviderService = new DateProvider.DateTestProviderService() //5/11/2018
+
+        let result = getReportFromLastYear list dateProviderService
+
+        Expect.equal result -14.5 "Should return -14.5"
+    }
+
+    //getRequestDoneThisYear
     test "Should report balance of active request from the begining of the year" {
         // AM matin; PM après-midi
         let request1 = {
@@ -1568,7 +1659,91 @@ let summaryTests =
 
         Expect.equal result 6.5 "Should return 6.5"
     }
+    test "Should return 0 when report balance of empty active request from the begining of the year" {
+        // AM matin; PM après-midi
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 11, 4); HalfDay = AM }
+            End = { Date = DateTime(2018, 11, 5); HalfDay = PM }
+        }
 
+        let request2 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 1, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 1, 2); HalfDay = AM }
+        }
+
+         let request3 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 6, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 6, 2); HalfDay = AM }
+        }
+
+        let request4 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 6, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 6, 2); HalfDay = AM }
+        }
+
+        let request5 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 6, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 6, 2); HalfDay = AM }
+        }
+
+        let request6 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 6, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 6, 2); HalfDay = AM }
+        }
+
+        let request7 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 6, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 6, 2); HalfDay = AM }
+        }
+
+        let request8 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 12, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 12, 2); HalfDay = AM }
+        }
+
+        let requestEvent1 = RequestCanceledByEmployee  request1
+        let requestEvent2 = RequestCanceledByEmployee  request2
+        let requestEvent3 = RequestCanceledByEmployee  request3
+        let requestEvent4 = RequestCanceledByEmployee  request4
+        let requestEvent5 = RequestCanceledByEmployee  request5
+        let requestEvent6 = RequestCanceledByEmployee  request6
+        let requestEvent7 = RequestCanceledByEmployee  request7
+        let requestEvent8 = RequestCanceledByEmployee  request8
+       
+        let list = [requestEvent1; requestEvent2; requestEvent3; requestEvent4; requestEvent5; requestEvent6; requestEvent7; requestEvent8]
+        let dateProviderService = new DateProvider.DateTestProviderService() //5/11/2018
+
+        let result = getRequestDoneThisYear list dateProviderService
+
+        Expect.equal result 0.0 "Should return 0.0"
+    }
+    test "Should return 0 when report balance of none active request from the begining of the year" {
+        // AM matin; PM après-midi
+        let list = []
+        let dateProviderService = new DateProvider.DateTestProviderService() //5/11/2018
+
+        let result = getRequestDoneThisYear list dateProviderService
+
+        Expect.equal result 0.0 "Should return 0.0"
+    }
+
+    //getRequestWaitingThisYear
     test "Should report balance of active request from today to the end of the year" {
         // AM matin; PM après-midi
         let request1 = {
@@ -1643,4 +1818,88 @@ let summaryTests =
 
         Expect.equal result 6.5 "Should return 6.5"
     }
+    test "Should return 0 when report balance of empty active request from today to the end of the year" {
+        // AM matin; PM après-midi
+        let request1 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 1, 4); HalfDay = AM }
+            End = { Date = DateTime(2018, 1, 5); HalfDay = PM }
+        }
+
+        let request2 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 1, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 1, 2); HalfDay = AM }
+        }
+
+         let request3 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 1, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 1, 2); HalfDay = AM }
+        }
+
+        let request4 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 1, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 1, 2); HalfDay = AM }
+        }
+
+        let request5 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 1, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 1, 2); HalfDay = AM }
+        }
+
+        let request6 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 1, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 1, 2); HalfDay = AM }
+        }
+
+        let request7 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 1, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 1, 2); HalfDay = AM }
+        }
+
+        let request8 = {
+            UserId = 1
+            RequestId = Guid.NewGuid()
+            Start = { Date = DateTime(2018, 1, 1); HalfDay = AM }
+            End = { Date = DateTime(2018, 1, 2); HalfDay = AM }
+        }
+
+        let requestEvent1 = RequestCreated  request1
+        let requestEvent2 = RequestValidated  request2
+        let requestEvent3 = RequestRefused  request3
+        let requestEvent4 = RequestCanceledByEmployee  request4
+        let requestEvent5 = RequestAskedCancel  request5
+        let requestEvent6 = RequestCancelRefused  request6
+        let requestEvent7 = RequestCanceledByManager  request7
+        let requestEvent8 = RequestValidated  request8
+
+        let list = [requestEvent1; requestEvent2; requestEvent3; requestEvent4; requestEvent5; requestEvent6; requestEvent7; requestEvent8]
+        let dateProviderService = new DateProvider.DateTestProviderService() //5/11/2018
+
+        let result = getRequestWaitingThisYear list dateProviderService
+
+        Expect.equal result 0.0 "Should return 0.0"
+    }
+    test "Should return 0 when report balance of none active request from today to the end of the year" {
+        // AM matin; PM après-midi
+        let list = []
+        let dateProviderService = new DateProvider.DateTestProviderService() //5/11/2018
+
+        let result = getRequestWaitingThisYear list dateProviderService
+
+        Expect.equal result 0.0 "Should return 0.0"
+    }
+
   ]
