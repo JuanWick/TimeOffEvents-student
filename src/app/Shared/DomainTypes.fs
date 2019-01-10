@@ -110,10 +110,10 @@ module DomainTypes =
     type UserRequestSummary = {
         UserId: UserId
         Requests: RequestEvent List
-        ValidatedThisYear: int16
-        ReportedFromLastYear: int16
-        RequestsDoneThisYear: int16
-        RequestWaitingThisYear: int16
-        BalanceThisYear: int16
+        ValidatedThisYear: float
+        ReportedFromLastYear: float
+        RequestsDoneThisYear: float
+        RequestWaitingThisYear: float
+        BalanceThisYear: float
     }
     
