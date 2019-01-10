@@ -76,6 +76,7 @@ module DomainTypes =
             | RequestCanceledByManager request -> request
 
     type UserRequestsState = Map<Guid, RequestState>
+    type UserRequestsHistory = List<RequestState>
 
     type Command =
         | RequestTimeOff of TimeOffRequest

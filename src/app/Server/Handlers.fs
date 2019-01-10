@@ -17,8 +17,6 @@ module Handlers =
 
     //Command Handler
     let handleCommand (eventStore: IStore<UserId, RequestEvent>) (user: User) (command: Command) =
-        printfn("handleCommand")
-
         let userId = command.UserId
 
         let eventStream = eventStore.GetStream(userId)
@@ -189,9 +187,16 @@ module Handlers =
     
     let requestTimeOffHistoryByUserIdHandler (eventStore: IStore<UserId, RequestEvent>) (user:User) (idUser : int) = //TODO
         fun (next : HttpFunc) (ctx : HttpContext) -> 
-            task {               
+            task {
+
+                let eventStream = eventStore.GetStream(idUser)
+                let state = eventStream.ReadAll() |> Seq.fold getAllUserRequests List.empty
+
+                let dateProviderService = new DateProvider.DateProviderService()
                 let query = GetHistoryByUserId (idUser)
-                let result = handleQuery(eventStore) (user) (query)
+
+                let result = getHistoryByUserId state user query dateProviderService
+                
                 match result with
                 | Ok _ -> return! json result next ctx
                 | Error message ->

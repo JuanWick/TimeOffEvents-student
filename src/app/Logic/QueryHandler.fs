@@ -77,12 +77,16 @@ module QueryHandler =
         *)
         let dateProvider = dateProviderService :>ICustomDate
         let now = dateProvider.Now()
-        let lastDay = DateTime.DaysInMonth(now.Year, now.Month - 1)
+        let lastMonth = match (now.Month - 1) with 
+                        | 0 -> 12
+                        | _ -> now.Month - 1
+       
+        let lastDay = DateTime.DaysInMonth(now.Year, lastMonth)
         let requestTest = {
             UserId = 0
             RequestId = Guid.NewGuid()
             Start = { Date = DateTime(now.Year, 1, 1); HalfDay = AM } //Année du jour
-            End = { Date = DateTime(now.Year,now.Month - 1, lastDay); HalfDay = PM } //Date du jour
+            End = { Date = DateTime(now.Year,lastMonth, lastDay); HalfDay = PM } //Date du jour
         }
 
         //On ne prend que les request Validates
@@ -95,10 +99,14 @@ module QueryHandler =
             |> Seq.where(fun r -> match overlapsWith requestTest r.Request with
                                     | true -> true
                                     | false -> false)
-            |> Seq.map(fun(r) -> computeRequestTimeFromOverlaping requestTest r.Request)
-            |> Seq.reduce(+)
-
-        float(result)
+        if Seq.isEmpty result then
+            float(0)
+           else 
+             let computeResult =
+                result
+                |> Seq.map(fun(r) -> computeRequestTimeFromOverlaping requestTest r.Request)
+                |> Seq.reduce(+) 
+             float(computeResult)
 
     // Report des congès sur l'année précédente
     let getReportFromLastYear (requests:RequestEvent List) dateProviderService =  
@@ -125,10 +133,14 @@ module QueryHandler =
             |> Seq.where(fun r -> match overlapsWith requestTest r.Request with
                                     | true -> true
                                     | false -> false)
-            |> Seq.map(fun(r) -> computeRequestTimeFromOverlaping requestTest r.Request)
-            |> Seq.reduce(+)
-
-        float(nbDayByYear - result)
+        if Seq.isEmpty result then
+            float(nbDayByYear)
+           else 
+             let computeResult =
+                result
+                |> Seq.map(fun(r) -> computeRequestTimeFromOverlaping requestTest r.Request)
+                |> Seq.reduce(+) 
+             float(computeResult)
 
     // Cumul des demandes actives entre le début de l'année et la date du jour
     let getRequestDoneThisYear (requests:RequestEvent List) dateProviderService =  //TODO
@@ -139,7 +151,6 @@ module QueryHandler =
         *)
         let dateProvider = dateProviderService :>ICustomDate
         let now = dateProvider.Now()
-        let lastDay = DateTime.DaysInMonth(now.Year, now.Month - 1)
         let requestTest = {
             UserId = 0
             RequestId = Guid.NewGuid()
@@ -160,10 +171,14 @@ module QueryHandler =
             |> Seq.where(fun r -> match overlapsWith requestTest r.Request with
                                     | true -> true
                                     | false -> false)
-            |> Seq.map(fun(r) -> computeRequestTimeFromOverlaping requestTest r.Request)
-            |> Seq.reduce(+)
-
-        float(result)
+        if Seq.isEmpty result then
+            float(0)
+           else 
+             let computeResult =
+                result
+                |> Seq.map(fun(r) -> computeRequestTimeFromOverlaping requestTest r.Request)
+                |> Seq.reduce(+) 
+             float(computeResult)
     
     // Cumul des demandes prévu entre le lendemain de la demande et la fin de l'annee
     let getRequestWaitingThisYear (requests:RequestEvent List) dateProviderService =  //TODO
@@ -174,7 +189,6 @@ module QueryHandler =
         *)
         let dateProvider = dateProviderService :>ICustomDate
         let now = dateProvider.Now()
-        let lastDay = DateTime.DaysInMonth(now.Year, now.Month - 1)
         let requestTest = {
             UserId = 0
             RequestId = Guid.NewGuid()
@@ -195,10 +209,14 @@ module QueryHandler =
             |> Seq.where(fun r -> match overlapsWith requestTest r.Request with
                                     | true -> true
                                     | false -> false)
-            |> Seq.map(fun(r) -> computeRequestTimeFromOverlaping requestTest r.Request)
-            |> Seq.reduce(+)
-
-        float(result)
+        if Seq.isEmpty result then
+            float(0)
+           else 
+             let computeResult =
+                result
+                |> Seq.map(fun(r) -> computeRequestTimeFromOverlaping requestTest r.Request)
+                |> Seq.reduce(+) 
+             float(computeResult)
 
     let getSummaryByUserId (userRequests: UserRequestsState) (user:User) (query: Query) dateProviderService =
         let relatedUserId = query.UserId
@@ -240,20 +258,23 @@ module QueryHandler =
 
             Ok summary
 
-    let getHistoryByUserId (userRequests: UserRequestsState) (userId:UserId)  =
-        let result = 
-            userRequests
-            |> Map.toSeq
-            |> Seq.map(fun(_, requestState) -> requestState)
-            |> Seq.map(convertStates)
-            |> Seq.where(fun r -> match r with
-                                    | None -> false
-                                    | _ -> true)
-            |> Seq.map(fun r -> r.Value)
-            |> Seq.toList
+    let getHistoryByUserId (userRequests: UserRequestsHistory) (user:User) (query: Query) dateProviderService =
+        let relatedUserId = query.UserId
+        match user with
+        | Employee userId when userId <> relatedUserId ->
+            Error "Unauthorized"
+        | _ ->
+            let result = 
+                userRequests
+                |> List.toSeq
+                |> Seq.map(convertStates)
+                |> Seq.where(fun r -> match r with
+                                        | None -> false
+                                        | _ -> true)
+                |> Seq.map(fun r -> r.Value)
+                |> Seq.toList
 
-        Ok result
-
+            Ok result
 
     let execute (userRequests: UserRequestsState) (user:User) (query: Query) dateProviderService =
         let relatedUserId = query.UserId
@@ -267,7 +288,5 @@ module QueryHandler =
                 getRequestById requestState 
             | GetAllRequestByUserId (userId) ->
                 getAllRequestByUserId userRequests userId
-            | GetHistoryByUserId (userId) ->
-                getHistoryByUserId userRequests userId
                 
     

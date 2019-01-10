@@ -17,3 +17,8 @@ module EventHandler =
         let requestState = defaultArg (Map.tryFind event.Request.RequestId userRequests) NotCreated
         let newRequestState = evolveRequest requestState event
         userRequests.Add (event.Request.RequestId, newRequestState)
+
+    let getAllUserRequests (userRequests: UserRequestsHistory) (event: RequestEvent) =
+        let newRequestState = evolveRequest NotCreated event
+        let newUserRequests = newRequestState::userRequests
+        newUserRequests
