@@ -40,8 +40,6 @@ module CommandHandler =
 
         results.Length > 0
 
-    ////////////////////////////////////////////////////////////////////////////
-
     let createRequest activeUserRequests  request dateProviderService =
         let dateProviderService = dateProviderService
         let dateProvider = dateProviderService :>ICustomDate
@@ -115,8 +113,6 @@ module CommandHandler =
             | CancelRefused request-> 
                     Ok [RequestCanceledByManager request]
             | _ -> Error "Invalid state for action"
-         
-    ////////////////////////////////////////////////////////////////////////////
 
     let convertStates(requestState:RequestState)  =
         match requestState with
