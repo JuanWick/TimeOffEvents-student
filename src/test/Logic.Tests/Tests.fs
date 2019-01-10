@@ -1430,15 +1430,15 @@ let summaryTests =
         let request1 = {
             UserId = 1
             RequestId = Guid.NewGuid()
-            Start = { Date = DateTime(2018, 11, 4); HalfDay = AM }
-            End = { Date = DateTime(2018, 11, 4); HalfDay = PM }
+            Start = { Date = DateTime(2018, 10, 4); HalfDay = AM }
+            End = { Date = DateTime(2018, 10, 4); HalfDay = PM }
         }
 
          let request2 = {
             UserId = 1
             RequestId = Guid.NewGuid()
             Start = { Date = DateTime(2017, 12, 20); HalfDay = AM }
-            End = { Date = DateTime(2018, 11, 05); HalfDay = AM }
+            End = { Date = DateTime(2018, 1, 1); HalfDay = PM }
         }
 
         let requestEvent1 = RequestValidated  request1
@@ -1451,7 +1451,7 @@ let summaryTests =
 
         let result = getRequestSumValidatedThisYear list dateProviderService
 
-        Expect.equal result 310.0 "Should return 310"
+        Expect.equal result 2.0 "Should return 2"
     }
 
 
@@ -1461,21 +1461,21 @@ let summaryTests =
             UserId = 1
             RequestId = Guid.NewGuid()
             Start = { Date = DateTime(2017, 11, 4); HalfDay = AM }
-            End = { Date = DateTime(2017, 11, 10); HalfDay = PM }
+            End = { Date = DateTime(2017, 11, 4); HalfDay = PM }
         }
 
         let request2 = {
             UserId = 1
             RequestId = Guid.NewGuid()
             Start = { Date = DateTime(2017, 1, 1); HalfDay = AM }
-            End = { Date = DateTime(2017, 1, 5); HalfDay = AM }
+            End = { Date = DateTime(2017, 1, 1); HalfDay = PM }
         }
 
          let request3 = {
             UserId = 1
             RequestId = Guid.NewGuid()
             Start = { Date = DateTime(2018, 6, 1); HalfDay = AM }
-            End = { Date = DateTime(2018, 6, 5); HalfDay = AM }
+            End = { Date = DateTime(2018, 6, 1); HalfDay = AM }
         }
 
         let requestEvent1 = RequestValidated  request1
@@ -1490,7 +1490,7 @@ let summaryTests =
 
         let result = getReportFromLastYear list dateProviderService
 
-        Expect.equal result 48.5 "Should return 48.5"
+        Expect.equal result 58.0 "Should return 58"
     }
 
     test "Should report balance of active request from the begining of the year" {

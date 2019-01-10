@@ -140,7 +140,7 @@ module QueryHandler =
                 result
                 |> Seq.map(fun(r) -> computeRequestTimeFromOverlaping requestTest r.Request)
                 |> Seq.reduce(+) 
-             float(computeResult)
+             float(nbDayByYear - computeResult)
 
     // Cumul des demandes actives entre le début de l'année et la date du jour
     let getRequestDoneThisYear (requests:RequestEvent List) dateProviderService =  //TODO

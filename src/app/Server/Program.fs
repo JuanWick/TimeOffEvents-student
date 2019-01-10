@@ -46,7 +46,6 @@ let webApp (eventStore: IStore<UserId, RequestEvent>) =
 
 // ---------------------------------
 // Error handler
-
 // ---------------------------------
 
 let errorHandler (ex: Exception) (logger: ILogger) =
